@@ -1,0 +1,260 @@
+-- =============================================================================
+-- PAINEL ADMINISTRATIVO COMPLETO (SISTEMA INTEGRADO)
+-- =============================================================================
+
+local Players = game:Service("Players")
+local RunService = game:Service("RunService")
+local UserInputService = game:Service("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- =============================================================================
+-- 1. CRIAÇÃO DA ESTRUTURA VISUAL (GUI)
+-- =============================================================================
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PainelAdministrativoCompleto"
+ScreenGui.ResetOnSpawn = false
+
+-- Tentativa de anexar ao CoreGui, senão usa PlayerGui (compatibilidade com Studio)
+local sucesso, resultado = pcall(function() ScreenGui.Parent = CoreGui end)
+if not sucesso then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+-- Janela Principal
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
+MainFrame.Size = UDim2.new(0, 550, 0, 380)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+-- Barra de Título
+local TitleBar = Instance.new("TextLabel")
+TitleBar.Name = "TitleBar"
+TitleBar.Parent = MainFrame
+TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TitleBar.BorderSizePixel = 0
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
+TitleBar.Text = "   SISTEMA ADMINISTRATIVO INTEGRADO v2.0"
+TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleBar.TextXAlignment = Enum.TextXAlignment.Left
+TitleBar.Font = Enum.Font.SourceSansBold
+TitleBar.TextSize = 14
+
+-- Menu Lateral (Abas)
+local Sidebar = Instance.new("Frame")
+Sidebar.Name = "Sidebar"
+Sidebar.Parent = MainFrame
+Sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Sidebar.BorderSizePixel = 0
+Sidebar.Position = UDim2.new(0, 0, 0, 35)
+Sidebar.Size = UDim2.new(0, 130, 1, -35)
+
+local SidebarLayout = Instance.new("UIListLayout")
+SidebarLayout.Parent = Sidebar
+SidebarLayout.Padding = UDim.new(0, 2)
+
+-- Container de Conteúdo
+local Container = Instance.new("Frame")
+Container.Name = "Container"
+Container.Parent = MainFrame
+Container.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Container.BorderSizePixel = 0
+Container.Position = UDim2.new(0, 130, 0, 35)
+Container.Size = UDim2.new(1, -130, 1, -35)
+
+-- =============================================================================
+-- 2. MECANISMO DE GERENCIAMENTO DE ABAS
+-- =============================================================================
+
+local Abas = {}
+
+local function CriarAba(nomeAba)
+    local BotaoAba = Instance.new("TextButton")
+    BotaoAba.Name = nomeAba .. "Tab"
+    BotaoAba.Parent = Sidebar
+    BotaoAba.Size = UDim2.new(1, 0, 0, 35)
+    BotaoAba.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    BotaoAba.BorderSizePixel = 0
+    BotaoAba.Text = nomeAba
+    BotaoAba.TextColor3 = Color3.fromRGB(200, 200, 200)
+    BotaoAba.Font = Enum.Font.SourceSans
+    BotaoAba.TextSize = 14
+
+    local FrameConteudo = Instance.new("ScrollingFrame")
+    FrameConteudo.Name = nomeAba .. "Page"
+    FrameConteudo.Parent = Container
+    FrameConteudo.Size = UDim2.new(1, 0, 1, 0)
+    FrameConteudo.BackgroundTransparency = 1
+    FrameConteudo.BorderSizePixel = 0
+    FrameConteudo.Visible = false
+    FrameConteudo.CanvasSize = UDim2.new(0, 0, 2, 0)
+    FrameConteudo.ScrollBarThickness = 6
+    
+    local LayoutConteudo = Instance.new("UIListLayout")
+    LayoutConteudo.Parent = FrameConteudo
+    LayoutConteudo.Padding = UDim.new(0, 6)
+    
+    local Padding = Instance.new("UIPadding", FrameConteudo)
+    Padding.PaddingTop = UDim.new(0, 10)
+    Padding.PaddingLeft = UDim.new(0, 10)
+    Padding.PaddingRight = UDim.new(0, 10)
+
+    BotaoAba.MouseButton1Click:Connect(function()
+        for _, aba in pairs(Abas) do
+            aba.Frame.Visible = false
+            aba.Botao.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            aba.Botao.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+        FrameConteudo.Visible = true
+        BotaoAba.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        BotaoAba.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+
+    table.insert(Abas, {Botao = BotaoAba, Frame = FrameConteudo})
+    return FrameConteudo
+end
+
+-- Funções auxiliares para criar elementos visuais dentro das abas
+local function CriarBotao(parent, texto, callback)
+    local Botao = Instance.new("TextButton")
+    Botao.Parent = parent
+    Botao.Size = UDim2.new(1, 0, 0, 32)
+    Botao.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Botao.BorderSizePixel = 0
+    Botao.Text = texto
+    Botao.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Botao.Font = Enum.Font.SourceSans
+    Botao.TextSize = 14
+    Botao.MouseButton1Click:Connect(callback)
+    return Botao
+end
+
+local function CriarInputTexto(parent, placeholder)
+    local TextBox = Instance.new("TextBox")
+    TextBox.Parent = parent
+    TextBox.Size = UDim2.new(1, 0, 0, 32)
+    TextBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    TextBox.BorderSizePixel = 0
+    TextBox.PlaceholderText = placeholder
+    TextBox.Text = ""
+    TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextBox.Font = Enum.Font.SourceSans
+    TextBox.TextSize = 14
+    return TextBox
+end
+
+-- =============================================================================
+-- 3. ABAS DO SISTEMA E SEUS RESPECTIVOS CÓDIGOS LÓGICOS
+-- =============================================================================
+
+local abaStatus = CriarAba("Status/Local")
+local abaMovimento = CriarAba("Movimento")
+local abaVisual = CriarAba("Visuais (ESP)")
+local abaExecutor = CriarAba("Exec. Interno")
+
+--------------------------------------------------------------------------------
+-- ABA 1: STATUS / LOCAL PLAYER
+--------------------------------------------------------------------------------
+local inputVelocidade = CriarInputTexto(abaStatus, "Definir Velocidade (Padrão: 16)")
+CriarBotao(abaStatus, "Aplicar Velocidade", function()
+    local valor = tonumber(inputVelocidade.Text)
+    if valor and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = valor end
+    end
+end)
+
+local inputPulo = CriarInputTexto(abaStatus, "Definir Força do Pulo (Padrão: 50)")
+CriarBotao(abaStatus, "Aplicar Força do Pulo", function()
+    local valor = tonumber(inputPulo.Text)
+    if valor and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then 
+            hum.UseJumpPower = true
+            hum.JumpPower = valor 
+        end
+    end
+end)
+
+CriarBotao(abaStatus, "Resetar Personagem Local", function()
+    if LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.Health = 0 end
+    end
+end)
+
+--------------------------------------------------------------------------------
+-- ABA 2: SISTEMAS DE MOVIMENTAÇÃO (FLY & INFINITE JUMP)
+--------------------------------------------------------------------------------
+local voando = false
+local velocidadeVoo = 50
+local conexaoVoo = nil
+
+CriarBotao(abaMovimento, "Alternar Voo (Fly)", function()
+    voando = not voando
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = character.HumanoidRootPart
+    
+    if voando then
+        local bV = Instance.new("BodyVelocity")
+        bV.Name = "VoltagemVoo"
+        bV.Velocity = Vector3.new(0, 0, 0)
+        bV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        bV.Parent = hrp
+        
+        local camera = workspace.CurrentCamera
+        
+        conexaoVoo = RunService.RenderStepped:Connect(function()
+            local direcao = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then direcao = direcao + camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then direcao = direcao - camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then direcao = direcao - camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then direcao = direcao + camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direcao = direcao + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direcao = direcao - Vector3.new(0, 1, 0) end
+            
+            bV.Velocity = direcao * velocidadeVoo
+        end)
+    else
+        if conexaoVoo then conexaoVoo:Disconnect() end
+        local bV = hrp:FindFirstChild("VoltagemVoo")
+        if bV then bV:Destroy() end
+    end
+end)
+
+local puloInfinitoAtivo = false
+local conexaoPulo = nil
+
+CriarBotao(abaMovimento, "Alternar Pulo Infinito", function()
+    puloInfinitoAtivo = not puloInfinitoAtivo
+    if puloInfinitoAtivo then
+        conexaoPulo = UserInputService.JumpRequest:Connect(function()
+            if LocalPlayer.Character then
+                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end
+        end)
+    else
+        if conexaoPulo then conexaoPulo:Disconnect() end
+    end
+end)
+
+--------------------------------------------------------------------------------
+-- ABA 3: SISTEMA VISUAL (ESP CAIXAS & NOMES)
+--------------------------------------------------------------------------------
+local espAtivo = false
+local conteinerESP = {}
+
+local function CriarVisualESP(player)
+    if player == LocalPlayer then return end
+    
+    local function adicionarTags(character)
+        local head = character:WaitForChild("Head", 5)
